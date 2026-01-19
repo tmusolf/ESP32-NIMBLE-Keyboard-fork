@@ -530,43 +530,29 @@ void BleKeyboard::onConnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo) {
     // Since the physical link is already established, this is very fast 
     // and just sets up the GATT Client layer.
     if (pClient->connect(peerAddress)) {
-      Serial.println("inside pClient->connect(peerAddress)");
-      Serial.println("Connected - listing services:");
-      // Method 1: Get all services as vector (NimBLE standard)
-      std::vector<NimBLERemoteService*>* pServicesVector = pClient->getServices(true);  // true = discover from server
-      if (pServicesVector != nullptr) {
-          for (auto pSvc : *pServicesVector) {
-              Serial.printf("Found service: %s\n", pSvc->getUUID().toString().c_str());
-          }
-          delete pServicesVector;  // Clean up memory
-      }
-      
-      // Your original service lookup (now with full UUID)
-      NimBLERemoteService* pSvc = pClient->getService("00001800-0000-1000-8000-00805f9b34fb");
-      Serial.printf("GAP service (1800): %p\n", pSvc);
-      if (pSvc) {
-        Serial.println("inside if (pSvc)");
-        // 5. Look for the Device Name Characteristic (UUID 0x2A00)
-        NimBLERemoteCharacteristic* pChr = pSvc->getCharacteristic("2A00");
-        if (pChr && pChr->canRead()) {
-          Serial.println("inside if(pChr...");
-          // 6. Read the value
-          std::string value = pChr->readValue();
-          // Example: Save to a global variable if needed
-          setConnectedClientName(value);
-          
-          // Debug print 
-          Serial.printf("Client Device Name: %s\n",value.c_str());
+        Serial.println("Connected - listing services:");
+        
+        const std::vector<NimBLERemoteService*>& services = pClient->getServices(true);
+        for (auto pSvc : services) {
+            Serial.printf("Found service: %s\n", pSvc->getUUID().toString().c_str());
         }
-      }
-      // 7. Disconnect the *Client* layer (this does NOT disconnect the Keyboard)
-      pClient->disconnect();
+              
+        // Your GAP service lookup (full UUID)
+        NimBLERemoteService* pSvc = pClient->getService("00001800-0000-1000-8000-00805f9b34fb");
+        Serial.printf("GAP service (1800): %p\n", pSvc);
+        
+        if (pSvc != nullptr) {
+            NimBLERemoteCharacteristic* pChr = pSvc->getCharacteristic("00002a00-0000-1000-8000-00805f9b34fb");
+            if (pChr && pChr->canRead()) {
+                std::string value = pChr->readValue();
+                this->connectedClientName = value;
+                Serial.printf("Client Connected: %s\n", this->connectedClientName.c_str());
+            }
+        }
+        pClient->disconnect();
     }
-    // 8. Delete the client to free ESP32 memory
-    NimBLEDevice::deleteClient(pClient);
-  }
+    NimBLEDevice::deleteClient(pClient);  }
   // --- END: Get Client Device Name ---
-
 }
 
 void BleKeyboard::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo, int reason) {
