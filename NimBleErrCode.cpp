@@ -1,15 +1,9 @@
 #include <cstdint> // For uint16_t
 //#include <string>  // For std::string
 #include <Arduino.h> //For Serial.print
+#include <NimBleErrCode.h>
 
-struct errRec {
-  uint16_t NimBLE;
-  uint16_t Formal;
-  const char* errName;
-  const char* errDesc;
-};
-
-const errRec errTable[] = {
+const tNimBleErrRec nimBleErrTable[] = {
   {0x00,0x00,"N/A","Success"},
   {0x01,0x00,"BLE_HS_EAGAIN","Temporary failure; try again."},
   {0x02,0x00,"BLE_HS_EALREADY","Operation already in progress or completed."},
@@ -149,29 +143,21 @@ const errRec errTable[] = {
   {0x050d,0x0d,"BLE_SM_ERR_ALREADY","Indicates that the pairing over the LE transport failed due to a Pairing Request sent over the BR/EDR transport in process."},
   {0x050e,0x0e,"BLE_SM_ERR_CROSS_TRANS","Indicates that the BR/EDR Link Key generated on the BR/EDR transport cannot be used to derive and distribute keys for the LE transport."}
 };
-constexpr size_t ERR_TABLE_SIZE = sizeof(errTable)/sizeof(errTable[0]);
+constexpr size_t NIMBLE_ERR_TABLE_SIZE = sizeof(nimBleErrTable)/sizeof(nimBleErrTable[0]);
 
-uint16_t getErrIndex(uint16_t errCode) {
-  for (int i = 0; i < ERR_TABLE_SIZE; ++i) {  // Clean loop bound
-    if (errTable[i].NimBLE == errCode) {
-      return i;
-    }
-  }
-  return -1;
-}
 /*=================================================================================
   Print return codes for BLE 
   
   List is from here: https://mynewt.apache.org/latest/network/ble_hs/ble_hs_return_codes.html#return-code-reference
 =================================================================================*/
-void printNimBLEErrCode(int errCode) {
+tNimBleErrRec* getNimBleErrRec(tNimBleErrCode errCode) {
   uint16_t errIndex;
-  Serial.printf("NimBLE Reason code: 0x%04x: ",errCode);
-  errIndex = getErrIndex(errCode);
-  if (errIndex >=0) {
-    Serial.printf("%s: %s\n",errTable[errIndex].errName,errTable[errIndex].errDesc);
-  } 
-  else {
-    Serial.printf("Unknown error code\n");
+
+  for (int i = 0; i < NIMBLE_ERR_TABLE_SIZE; ++i) {  // Clean loop bound
+    if (nimBleErrTable[i].nimBle == errCode) {
+      return (tNimBleErrRec*)&nimBleErrTable[i];
+    }
   }
+  return NULL;
 }
+
