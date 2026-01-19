@@ -531,8 +531,19 @@ void BleKeyboard::onConnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo) {
     // and just sets up the GATT Client layer.
     if (pClient->connect(peerAddress)) {
       Serial.println("inside pClient->connect(peerAddress)");
-      // 4. Look for the Generic Access Service (UUID 0x1800)
-      NimBLERemoteService* pSvc = pClient->getService("1800");
+      Serial.println("Connected - listing services:");
+      // Method 1: Get all services as vector (NimBLE standard)
+      std::vector<NimBLERemoteService*>* pServicesVector = pClient->getServices(true);  // true = discover from server
+      if (pServicesVector != nullptr) {
+          for (auto pSvc : *pServicesVector) {
+              Serial.printf("Found service: %s\n", pSvc->getUUID().toString().c_str());
+          }
+          delete pServicesVector;  // Clean up memory
+      }
+      
+      // Your original service lookup (now with full UUID)
+      NimBLERemoteService* pSvc = pClient->getService("00001800-0000-1000-8000-00805f9b34fb");
+      Serial.printf("GAP service (1800): %p\n", pSvc);
       if (pSvc) {
         Serial.println("inside if (pSvc)");
         // 5. Look for the Device Name Characteristic (UUID 0x2A00)
