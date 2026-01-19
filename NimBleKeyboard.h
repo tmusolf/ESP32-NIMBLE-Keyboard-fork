@@ -121,7 +121,9 @@ private:
   std::string        deviceName;
   std::string        deviceManufacturer;
   uint8_t            batteryLevel;
+  std::string        connectedClientName;
   bool               connected = false;
+  uint16_t           errCode = 0xffff;
   uint32_t           _delay_ms = 7;
   void delay_ms(uint64_t ms);
 
@@ -144,10 +146,12 @@ public:
   size_t write(const uint8_t *buffer, size_t size);
   void releaseAll(void);
   bool isConnected(void);
+  std::string getConnectedClientName(void);
+  void setConnectedClientName(const std::string& name); //with const ref for efficiency
+  uint16_t getErrCode(void);
   void setBatteryLevel(uint8_t level);
   void setName(std::string deviceName);  
   void setDelay(uint32_t ms);
-
   void set_vendor_id(uint16_t vid);
   void set_product_id(uint16_t pid);
   void set_version(uint16_t version);

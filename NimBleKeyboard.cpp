@@ -91,6 +91,9 @@ BleKeyboard::BleKeyboard(std::string deviceName, std::string deviceManufacturer,
 
 void BleKeyboard::begin(void)
 {
+  //apparent breaking change in ESP32 library update to 3.x.x version with strings.
+  //had to add .c_str() here, but this version of BleKeyboard.cpp seems ok.
+  //BLEDevice::init(deviceName.c_str());
   NimBLEDevice::init(deviceName);
   NimBLEServer* pServer = NimBLEDevice::createServer();
   pServer->setCallbacks(this);
@@ -103,7 +106,9 @@ void BleKeyboard::begin(void)
   inputMediaKeys = hid->getInputReport(MEDIA_KEYS_ID);
 
   outputKeyboard->setCallbacks(this);
-
+  //apparent breaking change in ESP32 library update to 3.x.x version with strings.
+  //had to add .c_str() here, but this version of BleKeyboard.cpp seems ok.
+  //hid->manufacturer()->setValue(deviceManufacturer.c_str());
   hid->setManufacturer(deviceManufacturer);
   hid->setPnp(0x02, vid, pid, version);
   hid->setHidInfo(0x00, 0x01);
@@ -117,6 +122,14 @@ void BleKeyboard::begin(void)
   } 
 
   NimBLEDevice::setSecurityAuth(true, true, true);
+
+  //This thread talks about making a change here for the ESP32-C3
+  //Original line
+  //pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND);
+  //Patched line
+  //pSecurity->setAuthenticationMode(ESP_LE_AUTH_BOND);
+  //This version of BleKeyboard.cpp doesn't seem to use the same code here.
+  //These comments are here so I don't loose this information.
 
   hid->setReportMap((uint8_t*)_hidReportDescriptor, sizeof(_hidReportDescriptor));
   hid->startServices();
@@ -140,6 +153,17 @@ void BleKeyboard::end(void)
 
 bool BleKeyboard::isConnected(void) {
   return this->connected;
+}
+
+uint16_t BleKeyboard::getErrCode(void) {
+  return this->errCode;
+}
+std::string BleKeyboard::getConnectedClientName(void) {
+  return connectedClientName; //efficient return (move/copy)
+}
+
+void BleKeyboard::setConnectedClientName(const std::string& name) {
+  connectedClientName = name; //Direct assignment
 }
 
 void BleKeyboard::setBatteryLevel(uint8_t level) {
@@ -485,10 +509,35 @@ size_t BleKeyboard::write(const uint8_t *buffer, size_t size) {
 
 void BleKeyboard::onConnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo) {
   this->connected = true;
+  this->errCode = 0x00; //success
+  setConnectedClientName("test name");
+  std::string name = getConnectedClientName();
+  //Serial.printf prints garbage because printf expects const char* for %s, but passing 
+  //std::string directly gives you the object's internal pointer, not name.c_str().
+  Serial.printf("connected client name:%s : %s\n",name.c_str(), getConnectedClientName().c_str());
+/*
+  // Use the connection handle to create a client instance for discovery
+  NimBLEClient* pClient = connInfo.getConnHandle();
+
+  if (pClient) {
+      // 1. Discover the Generic Access Service
+      NimBLERemoteService* pRemoteService = pClient.getService(serviceUUID);
+      if (pRemoteService) {
+          // 2. Find the Device Name characteristic
+          NimBLERemoteCharacteristic* pRemoteChar = pRemoteService.getCharacteristic(charUUID);
+          if (pRemoteChar && pRemoteChar.canRead()) {
+              // 3. Read the name string
+              char* clientName = pRemoteChar.readValue();
+              Serial.printf("Remote Client Name: %s\n", clientName.c_str());
+          }
+      }
+  }
+*/
 }
 
 void BleKeyboard::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo, int reason) {
   this->connected = false;
+  this->errCode = reason;
 }
 
 void BleKeyboard::onWrite(NimBLECharacteristic* me, NimBLEConnInfo &connInfo) {
