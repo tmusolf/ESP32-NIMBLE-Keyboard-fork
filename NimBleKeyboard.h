@@ -7,6 +7,7 @@
 #include <nimble/nimble/host/services/gap/include/services/gap/ble_svc_gap.h>
 #include <NimBLEHIDDevice.h>
 #include "Print.h"
+#include <NimBleErrCode.h>
 
 #define NIMBLE_KEYBOARD_VERSION "2.0.0"
 #define NIMBLE_KEYBOARD_VERSION_MAJOR 2
@@ -123,7 +124,7 @@ private:
   uint8_t            batteryLevel;
   std::string        connectedClientName;
   bool               connected = false;
-  uint16_t           errCode = 0xffff;
+  tNimBleErrCode     nimBleErrCode = 0xffff;
   uint32_t           _delay_ms = 7;
   void delay_ms(uint64_t ms);
 
@@ -148,7 +149,7 @@ public:
   bool isConnected(void);
   std::string getConnectedClientName(void);
   void setConnectedClientName(const std::string& name); //with const ref for efficiency
-  uint16_t getErrCode(void);
+  tNimBleErrCode getNimBleErrCode(void);
   void setBatteryLevel(uint8_t level);
   void setName(std::string deviceName);  
   void setDelay(uint32_t ms);

@@ -155,8 +155,8 @@ bool BleKeyboard::isConnected(void) {
   return this->connected;
 }
 
-uint16_t BleKeyboard::getErrCode(void) {
-  return this->errCode;
+tNimBleErrCode BleKeyboard::getNimBleErrCode(void) {
+  return this->nimBleErrCode;
 }
 //Serial.printf prints garbage because printf expects const char* for %s, but passing 
 //std::string directly gives you the object's internal pointer, not name.c_str().
@@ -513,12 +513,12 @@ size_t BleKeyboard::write(const uint8_t *buffer, size_t size) {
 
 void BleKeyboard::onConnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo) {
   this->connected = true;
-  this->errCode = 0x00; //success
+  this->nimBleErrCode = 0x00; //success
 }
 
 void BleKeyboard::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo, int reason) {
   this->connected = false;
-  this->errCode = reason;
+  this->nimBleErrCode = reason;
 }
 
 void BleKeyboard::onWrite(NimBLECharacteristic* me, NimBLEConnInfo &connInfo) {
