@@ -122,6 +122,7 @@ private:
   std::string        deviceManufacturer;
   uint8_t            batteryLevel;
   std::string        connectedClientName;
+  NimBLEAddress      targetDeviceAddr;            // Storage for the address
   bool               connected = false;
   uint16_t           errCode = 0xffff;
   uint32_t           _delay_ms = 7;
@@ -146,6 +147,7 @@ public:
   size_t write(const uint8_t *buffer, size_t size);
   void releaseAll(void);
   bool isConnected(void);
+  NimBLEAddress getTargetDeviceAddr(void);
   std::string getConnectedClientName(void);
   void setConnectedClientName(const std::string& name); //with const ref for efficiency
   uint16_t getErrCode(void);

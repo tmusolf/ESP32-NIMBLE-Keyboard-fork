@@ -165,7 +165,9 @@ uint16_t BleKeyboard::getErrCode(void) {
 std::string BleKeyboard::getConnectedClientName(void) {
   return connectedClientName; //efficient return (move/copy)
 }
-
+NimBLEAddress BleKeyboard::getTargetDeviceAddr(void) {
+  return targetDeviceAddr;
+}   
 void BleKeyboard::setConnectedClientName(const std::string& name) {
   connectedClientName = name; //Direct assignment
 }
@@ -515,44 +517,9 @@ void BleKeyboard::onConnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo) {
   this->connected = true;
   this->errCode = 0x00; //success
 
-// --- START: Get Client Device Name ---
-  
-  // 1. Get the address of the device that just connected
-  NimBLEAddress peerAddress = connInfo.getAddress();
-  
-  // 2. Create a temporary Client instance to read from the phone/PC
-  NimBLEClient* pClient = NimBLEDevice::createClient();
-  
-  Serial.println("before if(pclient)");
-  if (pClient) {
-    Serial.println("inside if(pClient)");
-    // 3. "Connect" the client to the peer. 
-    // Since the physical link is already established, this is very fast 
-    // and just sets up the GATT Client layer.
-    if (pClient->connect(peerAddress)) {
-        Serial.println("Connected - listing services:");
-        
-        const std::vector<NimBLERemoteService*>& services = pClient->getServices(true);
-        for (auto pSvc : services) {
-            Serial.printf("Found service: %s\n", pSvc->getUUID().toString().c_str());
-        }
-              
-        // Your GAP service lookup (full UUID)
-        NimBLERemoteService* pSvc = pClient->getService("00001800-0000-1000-8000-00805f9b34fb");
-        Serial.printf("GAP service (1800): %p\n", pSvc);
-        
-        if (pSvc != nullptr) {
-            NimBLERemoteCharacteristic* pChr = pSvc->getCharacteristic("00002a00-0000-1000-8000-00805f9b34fb");
-            if (pChr && pChr->canRead()) {
-                std::string value = pChr->readValue();
-                this->connectedClientName = value;
-                Serial.printf("Client Connected: %s\n", this->connectedClientName.c_str());
-            }
-        }
-        pClient->disconnect();
-    }
-    NimBLEDevice::deleteClient(pClient);  }
-  // --- END: Get Client Device Name ---
+  // 1. Get the address of the device that just connected and save it.
+  //can't do client connection while in onConnect code so we'll do it in main loop
+  targetDeviceAddr = connInfo.getAddress();
 }
 
 void BleKeyboard::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo, int reason) {
