@@ -165,9 +165,7 @@ uint16_t BleKeyboard::getErrCode(void) {
 std::string BleKeyboard::getConnectedClientName(void) {
   return connectedClientName; //efficient return (move/copy)
 }
-NimBLEAddress BleKeyboard::getTargetDeviceAddr(void) {
-  return targetDeviceAddr;
-}   
+
 void BleKeyboard::setConnectedClientName(const std::string& name) {
   connectedClientName = name; //Direct assignment
 }
@@ -516,10 +514,6 @@ size_t BleKeyboard::write(const uint8_t *buffer, size_t size) {
 void BleKeyboard::onConnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo) {
   this->connected = true;
   this->errCode = 0x00; //success
-
-  // 1. Get the address of the device that just connected and save it.
-  //can't do client connection while in onConnect code so we'll do it in main loop
-  targetDeviceAddr = connInfo.getAddress();
 }
 
 void BleKeyboard::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo, int reason) {
