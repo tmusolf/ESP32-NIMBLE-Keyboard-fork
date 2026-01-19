@@ -158,6 +158,10 @@ bool BleKeyboard::isConnected(void) {
 uint16_t BleKeyboard::getErrCode(void) {
   return this->errCode;
 }
+//Serial.printf prints garbage because printf expects const char* for %s, but passing 
+//std::string directly gives you the object's internal pointer, not name.c_str().
+//Use this syntax: Serial.printf("connected client name:%s\n", getConnectedClientName().c_str());
+
 std::string BleKeyboard::getConnectedClientName(void) {
   return connectedClientName; //efficient return (move/copy)
 }
@@ -510,29 +514,48 @@ size_t BleKeyboard::write(const uint8_t *buffer, size_t size) {
 void BleKeyboard::onConnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo) {
   this->connected = true;
   this->errCode = 0x00; //success
-  setConnectedClientName("test name");
-  std::string name = getConnectedClientName();
-  //Serial.printf prints garbage because printf expects const char* for %s, but passing 
-  //std::string directly gives you the object's internal pointer, not name.c_str().
-  Serial.printf("connected client name:%s : %s\n",name.c_str(), getConnectedClientName().c_str());
-/*
-  // Use the connection handle to create a client instance for discovery
-  NimBLEClient* pClient = connInfo.getConnHandle();
 
+// --- START: Get Client Device Name ---
+  
+  // 1. Get the address of the device that just connected
+  NimBLEAddress peerAddress = connInfo.getAddress();
+  
+  // 2. Create a temporary Client instance to read from the phone/PC
+  NimBLEClient* pClient = NimBLEDevice::createClient();
+  
+  Serial.println("before if(pclient)");
   if (pClient) {
-      // 1. Discover the Generic Access Service
-      NimBLERemoteService* pRemoteService = pClient.getService(serviceUUID);
-      if (pRemoteService) {
-          // 2. Find the Device Name characteristic
-          NimBLERemoteCharacteristic* pRemoteChar = pRemoteService.getCharacteristic(charUUID);
-          if (pRemoteChar && pRemoteChar.canRead()) {
-              // 3. Read the name string
-              char* clientName = pRemoteChar.readValue();
-              Serial.printf("Remote Client Name: %s\n", clientName.c_str());
-          }
+    Serial.println("inside if(pClient)");
+    // 3. "Connect" the client to the peer. 
+    // Since the physical link is already established, this is very fast 
+    // and just sets up the GATT Client layer.
+    if (pClient->connect(peerAddress)) {
+      Serial.println("inside pClient->connect(peerAddress)");
+      // 4. Look for the Generic Access Service (UUID 0x1800)
+      NimBLERemoteService* pSvc = pClient->getService("1800");
+      if (pSvc) {
+        Serial.println("inside if (pSvc)");
+        // 5. Look for the Device Name Characteristic (UUID 0x2A00)
+        NimBLERemoteCharacteristic* pChr = pSvc->getCharacteristic("2A00");
+        if (pChr && pChr->canRead()) {
+          Serial.println("inside if(pChr...");
+          // 6. Read the value
+          std::string value = pChr->readValue();
+          // Example: Save to a global variable if needed
+          setConnectedClientName(value);
+          
+          // Debug print 
+          Serial.printf("Client Device Name: %s\n",value.c_str());
+        }
       }
+      // 7. Disconnect the *Client* layer (this does NOT disconnect the Keyboard)
+      pClient->disconnect();
+    }
+    // 8. Delete the client to free ESP32 memory
+    NimBLEDevice::deleteClient(pClient);
   }
-*/
+  // --- END: Get Client Device Name ---
+
 }
 
 void BleKeyboard::onDisconnect(NimBLEServer* pServer, NimBLEConnInfo &connInfo, int reason) {
