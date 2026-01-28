@@ -170,10 +170,10 @@ void BleKeyboard::setConnectedClientName(const std::string& name) {
   connectedClientName = name; //Direct assignment
 }
 
-void BleKeyboard::setBatteryLevel(uint8_t level) {
+void BleKeyboard::setBatteryLevel(uint8_t level, bool notify) {
   this->batteryLevel = level;
   if (hid != 0)
-    this->hid->setBatteryLevel(this->batteryLevel);
+    this->hid->setBatteryLevel(this->batteryLevel,notify);
 }
 
 //must be called before begin in order to set the name

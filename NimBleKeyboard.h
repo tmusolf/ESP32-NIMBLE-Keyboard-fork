@@ -150,7 +150,7 @@ public:
   std::string getConnectedClientName(void);
   void setConnectedClientName(const std::string& name); //with const ref for efficiency
   tNimBleErrCode getNimBleErrCode(void);
-  void setBatteryLevel(uint8_t level);
+  void setBatteryLevel(uint8_t level,bool notify);
   void setName(std::string deviceName);  
   void setDelay(uint32_t ms);
   void set_vendor_id(uint16_t vid);
